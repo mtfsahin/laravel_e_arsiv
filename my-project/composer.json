@@ -28,7 +28,8 @@
         },
         "files": [
             "app/Helpers/eInvoice/convertTextPrice.php",
-            "app/Helpers/eInvoice/UblInvoiceCreator.php"
+            "app/Helpers/eInvoice/UblInvoiceCreator.php",
+            "app/Helpers/eInvoice/sendEArchiveInvoice.php"
         ]
     },
     "autoload-dev": {

@@ -13,7 +13,6 @@ class UblInvoiceCreator
     public static function create()
     {
 
-
         // variables
         $time = now()->format('H:i:s');
         $date = now();
@@ -45,11 +44,6 @@ class UblInvoiceCreator
         $Customer_Country = 'Türkiye';
         $Customer_Name = 'test';
         $Customer_LastName = 'testsurname';
-
-        // statik değişkenler
-        $destinationUrnConfig = "mustafa9889.ma@gmail.com";
-        $documentDateConfig = $invoice_date;
-        $sourceUrnConfig = "urn:mail:defaultgb@sahanekitap.com.tr";
 
         // Cart cofig
         $Products = 'test ürün';
@@ -222,6 +216,10 @@ class UblInvoiceCreator
         // ProfileID
         $ProfileID = $doc->createElementNS($urn, "cbc:ProfileID", $Profile_ID);
         $invoice->appendChild($ProfileID);
+
+        // ID alanı değişecek - generate -yıl+ay+gun+random
+        $ID = $doc->createElementNS($urn, "cbc:ID", $Fatura_ID);
+        $invoice->appendChild($ID);
 
         // CopyIndicator
         $CopyIndicator = $doc->createElementNS($urn, "cbc:CopyIndicator", $Copy_Indicator);
@@ -707,7 +705,6 @@ class UblInvoiceCreator
         $Price->appendChild($PriceAmount);
 
         $xml_content = $doc->saveXML();
-
 
         return $xml_content;
 
