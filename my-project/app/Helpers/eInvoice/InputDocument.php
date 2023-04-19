@@ -1,4 +1,7 @@
 <?php
+
+namespace App\Helpers\eInvoice;
+
 class InputDocument
 {
     public $xmlContent;
@@ -6,17 +9,15 @@ class InputDocument
     public $documentDate;
     public $documentUUID;
     public $sourceUrn;
-    public $localId;
     public $documentId;
 
-    public function __construct($xmlContent, $destinationUrn, $documentDate, $documentUUID, $sourceUrn, $localId, $documentId)
+    public function __construct($xml_content, $destinationUrn, $documentDate, $documentUUID, $sourceUrn, $documentId)
     {
-        $this->xmlContent = $xmlContent;
+        $this->xmlContent = $xml_content;
         $this->destinationUrn = $destinationUrn;
         $this->documentDate = $documentDate;
         $this->documentUUID = $documentUUID;
         $this->sourceUrn = $sourceUrn;
-        $this->localId = $localId;
         $this->documentId = $documentId;
     }
 }

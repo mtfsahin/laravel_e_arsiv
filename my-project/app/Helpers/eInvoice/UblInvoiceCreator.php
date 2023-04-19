@@ -708,7 +708,8 @@ class UblInvoiceCreator
 
         $xml_content = $doc->saveXML();
 
-        return $xml_content();
+
+        return $xml_content;
 
     }
 }
