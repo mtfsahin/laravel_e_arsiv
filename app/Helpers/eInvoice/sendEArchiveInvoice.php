@@ -11,6 +11,7 @@ class sendEArchiveInvoice
     public static function send($xml_content, $destinationUrn, $documentDate, $documentUUID, $documentId, $sourceUrn)
     {
 
+
         // Kullanıcı adı ve şifre
         $username = "admin_002874";
         $password = ")xrd9!iX";
@@ -49,5 +50,6 @@ class sendEArchiveInvoice
 
             echo "<br>";
         }
+
     }
 }
