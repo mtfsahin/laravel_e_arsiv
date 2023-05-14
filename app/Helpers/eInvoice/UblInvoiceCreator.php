@@ -16,13 +16,10 @@ class UblInvoiceCreator
         $time = now()->format('H:i:s');
         $date = now();
         $invoice_date = $date->format('Y-m-d');
-        $yaziyla = 'Yalnız ' . convertTextPrice($order['grand_total'], 2, "TL,", "Kuruş", "#", null, null, null);
-
-        $urun_sayi = 1;
-
+        $translateText = 'Yalnız ' . convertTextPrice($order['grand_total'], 2, "TL,", "Kuruş", "#", null, null, null);
+        $product_line = $order['product_line'];
         $UUIDnum = Str::uuid()->toString();
-
-        $Fatura_ID  = 'ABC' . $date->format('Ymd') . $order['order_id'];
+        $InvoiceID  = 'ABC' . $date->format('Ymd') . $order['order_id'];
         $Copy_Indicator  = 'false';
 
         // Configrasyon VKN_TCKN , VKN
@@ -39,17 +36,13 @@ class UblInvoiceCreator
         $Customer_LastName = $customer['last_name'];
 
         // Amount config
-        $Vergi_Amount = 0.00;
-        $Cart_Total = 1;
-        $Amounts_Payable = 1;
-        $Vergi_Percent = 0.00;
+        $TaxAmountTotal = $order['tax_total'];
+        $TaxableAmount = $order['grand_total'];
+        $Tax_insclusive = $order['tax_insclusive'];
+        $Tax_Percent = $order['tax_percent'];
         $TaxTypeCode = '0015';
-        $AllowanceTotalAmount = 0.00;
+        $AllowanceTotalAmount = $order['coupon_discount'];
         $TaxCategory_Name = 'GERÇEK USULDE KATMA DEĞER VERGİSİ';
-
-        // Invoice config
-        $InvoiceLine = 1;
-        $InvoicedQuantity = 1;
 
         // Ubl config
         $UBLVersion_ID = '2.1';
@@ -58,14 +51,11 @@ class UblInvoiceCreator
         $Issue_Date  = $invoice_date;
         $Issue_Time  = $time;
         $InvoiceType_Code = 'ISTISNA';
-        $Note_Yaziyla = $yaziyla;
         $DocumentCurrenc_Code = 'TRY';
-        $LineCountNumeric = $urun_sayi;
+        $LineCountNumeric = $product_line;
 
         // AdditionalDocumentReferance config
         $AdditionalDocumentReference_ID = Str::uuid()->toString();
-
-
         $AdditionalDocumentReference_IssueDate =  $invoice_date;
         $AdditionalDocumentReference_DocumentTypeCode = 'GONDERIM_SEKLI';
         $AdditionalDocumentReference_DocumentType = 'ELEKTRONIK';
@@ -109,19 +99,19 @@ class UblInvoiceCreator
         $AllowanceCharge_Amount = 0;
 
         // TaxTotal config
-        $TaxTotal_TaxAmount = $Vergi_Amount;
-        $TaxTotal_TaxSubtotal_TaxableAmount = $Cart_Total;
-        $TaxTotal_TaxSubtotal_TaxAmount = $Vergi_Amount;
-        $TaxTotal_TaxSubtotal_Percent = $Vergi_Percent;
+        $TaxTotal_TaxAmount = $TaxAmountTotal;
+        $TaxTotal_TaxSubtotal_TaxableAmount = $TaxableAmount;
+        $TaxTotal_TaxSubtotal_TaxAmount = $TaxAmountTotal;
+        $TaxTotal_TaxSubtotal_Percent = $Tax_Percent;
         $TaxTotal_TaxScheme_Name = $TaxCategory_Name;
         $TaxTotal_TaxTypeCode = $TaxTypeCode;
 
         // LegalMonetaryTotal config
-        $LegalMonetaryTotal_LineExtensionAmount = $Cart_Total;
-        $LegalMonetaryTotal_TaxExclusiveAmount = $Cart_Total;
-        $LegalMonetaryTotal_TaxInclusiveAmount = $Amounts_Payable;
+        $LegalMonetaryTotal_LineExtensionAmount = $TaxableAmount;
+        $LegalMonetaryTotal_TaxExclusiveAmount = $TaxableAmount;
+        $LegalMonetaryTotal_TaxInclusiveAmount = $Tax_insclusive;
         $LegalMonetaryTotal_AllowanceTotalAmount = $AllowanceTotalAmount;
-        $LegalMonetaryTotal_PayableAmount = $Amounts_Payable;
+        $LegalMonetaryTotal_PayableAmount = $Tax_insclusive;
 
         // Fatura nesnesi oluşturma
         $doc = new DOMDocument("1.0", "UTF-8");
@@ -190,7 +180,7 @@ class UblInvoiceCreator
         $invoice->appendChild($ProfileID);
 
         // ID alanı değişecek - generate -yıl+ay+gun+random
-        $ID = $doc->createElementNS($urn, "cbc:ID", $Fatura_ID);
+        $ID = $doc->createElementNS($urn, "cbc:ID", $InvoiceID);
         $invoice->appendChild($ID);
 
         // CopyIndicator
@@ -225,7 +215,7 @@ class UblInvoiceCreator
         $Note = $doc->createElementNS(
             $urn,
             "cbc:Note",
-            $Note_Yaziyla
+            $translateText
         );
         $invoice->appendChild($Note);
 
@@ -542,8 +532,6 @@ class UblInvoiceCreator
         $id->setAttribute("currencyID", "TRY");
         $AllowanceCharge->appendChild($id);
 
-
-
         // TaxTotal güncellendi
         $TaxTotal = $doc->createElementNS($urna, "cac:TaxTotal");
         $invoice->appendChild($TaxTotal);
@@ -637,14 +625,31 @@ class UblInvoiceCreator
             $InvoicedQuantity->setAttribute("unitCode", "C62");
             $InvoiceLine->appendChild($InvoicedQuantity);
 
-            $LineExtensionAmount = $doc->createElementNS($urn, "cbc:LineExtensionAmount", ($product['price'] * $product['quantity']));
+            $LineExtensionAmount = $doc->createElementNS($urn, "cbc:LineExtensionAmount", (($product['price'] * $product['quantity']) - $product['discount']));
             $LineExtensionAmount->setAttribute("currencyID", "TRY");
             $InvoiceLine->appendChild($LineExtensionAmount);
+
+            $AllowanceCharge = $doc->createElementNS($urna, "cac:AllowanceCharge");
+            $InvoiceLine->appendChild($AllowanceCharge);
+
+            $ChargeIndicator = $doc->createElementNS($urn, "cbc:ChargeIndicator", "false");
+            $AllowanceCharge->appendChild($ChargeIndicator);
+
+            $MultiplierFactorNumeric = $doc->createElementNS($urn, "cbc:MultiplierFactorNumeric", round( $product['discount'] / ( ($product['price'] * $product['quantity'])),2) );
+            $AllowanceCharge->appendChild($MultiplierFactorNumeric);
+
+            $Amount = $doc->createElementNS($urn, "cbc:Amount", $product['discount']);
+            $Amount->setAttribute("currencyID", "TRY");
+            $AllowanceCharge->appendChild($Amount);
+
+            $BaseAmount = $doc->createElementNS($urn, "cbc:BaseAmount", ($product['price'] * $product['quantity']));
+            $BaseAmount->setAttribute("currencyID", "TRY");
+            $AllowanceCharge->appendChild($BaseAmount);
 
             $TaxTotal = $doc->createElementNS($urna, "cac:TaxTotal");
             $InvoiceLine->appendChild($TaxTotal);
 
-            $TaxAmount = $doc->createElementNS($urn, "cbc:TaxAmount", $product['tax']);
+            $TaxAmount = $doc->createElementNS($urn, "cbc:TaxAmount", "0.00");
             $TaxAmount->setAttribute("currencyID", "TRY");
             $TaxTotal->appendChild($TaxAmount);
 
@@ -655,20 +660,20 @@ class UblInvoiceCreator
             $TaxableAmount->setAttribute("currencyID", "TRY");
             $TaxSubtotal->appendChild($TaxableAmount);
 
-            $TaxAmount = $doc->createElementNS($urn, "cbc:TaxAmount", $product['tax']);
+            $TaxAmount = $doc->createElementNS($urn, "cbc:TaxAmount", "0.00");
             $TaxAmount->setAttribute("currencyID", "TRY");
             $TaxSubtotal->appendChild($TaxAmount);
 
-            $Percent = $doc->createElementNS($urn, "cbc:Percent", $product['tax_percent']);
+            $Percent = $doc->createElementNS($urn, "cbc:Percent", "0");
             $TaxSubtotal->appendChild($Percent);
 
             $TaxCategory = $doc->createElementNS($urna, "cac:TaxCategory");
             $TaxSubtotal->appendChild($TaxCategory);
 
-            $TaxExemptionReasonCode = $doc->createElementNS($urn, "cbc:TaxExemptionReasonCode", "335");
+            $TaxExemptionReasonCode = $doc->createElementNS($urn, "cbc:TaxExemptionReasonCode", "351");
             $TaxCategory->appendChild($TaxExemptionReasonCode);
 
-            $TaxExemptionReason = $doc->createElementNS($urn, "cbc:TaxExemptionReason", "335 - KDV - Basılı Kitap ve Süreli Yayınların Tesliminde İstisna");
+            $TaxExemptionReason = $doc->createElementNS($urn, "cbc:TaxExemptionReason", "351 - KDV - İstisna Olmayan Diğer");
             $TaxCategory->appendChild($TaxExemptionReason);
 
             $TaxScheme = $doc->createElementNS($urna, "cac:TaxScheme");
@@ -693,7 +698,6 @@ class UblInvoiceCreator
             $PriceAmount->setAttribute("currencyID", "TRY");
             $Price->appendChild($PriceAmount);
         }
-
 
         $xml_content = $doc->saveXML();
 
