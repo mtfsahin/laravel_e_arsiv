@@ -11,7 +11,7 @@ class HomeController extends Controller
     public function myButtonClicked(Request $request)
     {
         function CreateEInvoice(){
-            $orderID = "12340";
+            $orderID = "12351";
             $grand_total = 4.0;
             $coupon_discount = 1.0;
             $TaxInclusiveAmount = 4.0;
@@ -28,7 +28,7 @@ class HomeController extends Controller
             $Customer_Name = 'test';
             $Customer_LastName = 'testsurname';
 
-            $products = [
+            $admin_products = [
                 [
                     'name' => 'test',
                     'price' => 2.00,
@@ -68,7 +68,7 @@ class HomeController extends Controller
                 'last_name' => $Customer_LastName
             ];
 
-            $xml_content = UblInvoiceCreator::create($order, $customer, $products);
+            $xml_content = UblInvoiceCreator::create($order, $customer, $admin_products);
 
 
             $xml = simplexml_load_string($xml_content);
@@ -78,9 +78,21 @@ class HomeController extends Controller
             $sourceUrn = "urn:mail:defaultgb@sahanekitap.com.tr";
             $destinationUrn = "mustafa9889.ma@gmail.com";
 
-            sendEArchiveInvoice::send($xml_content, $destinationUrn, $documentDate, $documentUUID, $documentId, $sourceUrn);
+            //sendEArchiveInvoice::send($xml_content, $destinationUrn, $documentDate, $documentUUID, $documentId, $sourceUrn);
+
+
         }
 
         CreateEInvoice();
     }
 }
+
+
+
+
+
+
+
+
+
+
