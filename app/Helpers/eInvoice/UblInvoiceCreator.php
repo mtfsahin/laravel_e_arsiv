@@ -10,7 +10,7 @@ use App\Helpers\eInvoice\InputDocument;
 
 class UblInvoiceCreator
 {
-    public static function create($order, $customer,$products )
+    public static function create($order, $customer,$admin_products )
     {
         // variables
         $time = now()->format('H:i:s');
@@ -37,11 +37,11 @@ class UblInvoiceCreator
 
         // Amount config
         $TaxAmountTotal = $order['tax_total'];
-        $TaxableAmount = $order['grand_total'];
+        $TaxableAmount = $order['sub_total'];
         $Tax_insclusive = $order['tax_insclusive'];
         $Tax_Percent = $order['tax_percent'];
         $TaxTypeCode = '0015';
-        $AllowanceTotalAmount = $order['coupon_discount'];
+        $AllowanceTotalAmount = $order['discount'];
         $TaxCategory_Name = 'GERÇEK USULDE KATMA DEĞER VERGİSİ';
 
         // Ubl config
@@ -234,6 +234,23 @@ class UblInvoiceCreator
             $LineCountNumeric
         );
         $invoice->appendChild($LineCountNumeric);
+
+        // OrderReference elemanı oluşturuldu ve eklendi
+         $orderReferance = $doc->createElementNS(
+            $urna,
+            "cac:OrderReference"
+        );
+        $invoice->appendChild($orderReferance);
+
+        $id = $doc->createElementNS(
+            $urn,
+            "cbc:ID",
+            $order['invoice_id']
+        );
+        $orderReferance->appendChild($id);
+
+        $issueDate = $doc->createElementNS($urn, "cbc:IssueDate", $AdditionalDocumentReference_IssueDate);
+        $orderReferance->appendChild($issueDate);
 
         // AdditionalDocumentReference elemanını oluşturuldu ve eklendi
         $additionalDocRef = $doc->createElementNS(
@@ -614,7 +631,13 @@ class UblInvoiceCreator
         $PayableAmount->nodeValue = $LegalMonetaryTotal_PayableAmount;
         $LegalMonetaryTotal->appendChild($PayableAmount);
 
-        foreach ($products as $index => $product) {
+        foreach ($admin_products as $index => $product) {
+
+            $LineExtensionAmount_Calculate = (($product['price'] * $product['quantity']) - $product['discount']);
+            //satır mal hizmet tutarı indirim ile birlikte eksiye düşerse 0 yazması için
+            if ($LineExtensionAmount_Calculate < 0) {
+                $LineExtensionAmount_Calculate = 0.00;
+            }
             $InvoiceLine = $doc->createElementNS($urna, "cac:InvoiceLine");
             $invoice->appendChild($InvoiceLine);
 
@@ -625,7 +648,7 @@ class UblInvoiceCreator
             $InvoicedQuantity->setAttribute("unitCode", "C62");
             $InvoiceLine->appendChild($InvoicedQuantity);
 
-            $LineExtensionAmount = $doc->createElementNS($urn, "cbc:LineExtensionAmount", (($product['price'] * $product['quantity']) - $product['discount']));
+            $LineExtensionAmount = $doc->createElementNS($urn, "cbc:LineExtensionAmount", $LineExtensionAmount_Calculate);
             $LineExtensionAmount->setAttribute("currencyID", "TRY");
             $InvoiceLine->appendChild($LineExtensionAmount);
 
