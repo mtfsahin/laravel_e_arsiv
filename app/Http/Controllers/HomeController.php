@@ -11,6 +11,7 @@ class HomeController extends Controller
     public function myButtonClicked(Request $request)
     {
         function CreateEInvoice(){
+            //fatura kesmek için örnek girilen adres isim vb. bilgiler
             $orderID = "12351";
             $grand_total = 4.0;
             $coupon_discount = 1.0;
@@ -18,7 +19,6 @@ class HomeController extends Controller
             $product_line = 2;
             $tax_total = 0.00;
             $tax_percent = 0.00;
-
             $Customer_TCKN = '11111111111';
             $Customer_Adress = 'tam adress';
             $Customer_CitySubdivisionName = 'Çankaya';
@@ -28,6 +28,7 @@ class HomeController extends Controller
             $Customer_Name = 'test';
             $Customer_LastName = 'testsurname';
 
+            //sepet vilgileri
             $admin_products = [
                 [
                     'name' => 'test',
@@ -46,18 +47,23 @@ class HomeController extends Controller
                     'discount' => 0,
                 ],
             ];
-
+            //sipariş bilgileri
             $order = [
                 'order_id' => $orderID,
+                'invoice_id' => $orderID,
+                //ara toplam burada
+                'sub_total' => $grand_total,
                 'grand_total' => $grand_total,
                 'product_line' =>  $product_line,
                 'tax_total' => $tax_total,
                 'tax_percent' => $tax_percent,
+                //indirim, ürünlere eşit olarak dağıtılır, eksiye düşerse ürün son fiyatı 0.00 olur eksiye düşmez
+                'discount' => 0.00,
                 'tax_insclusive' => $TaxInclusiveAmount,
                 'coupon_discount' => $coupon_discount,
 
             ];
-
+            //müşteri bilgileri
             $customer = [
                 'tckn' => $Customer_TCKN,
                 'city_subdivision' => $Customer_CitySubdivisionName,
@@ -68,9 +74,10 @@ class HomeController extends Controller
                 'last_name' => $Customer_LastName
             ];
 
+            //yukarıda siparişe göre değişen değerlere göre UBL 2.1 formatta xml üretir
             $xml_content = UblInvoiceCreator::create($order, $customer, $admin_products);
 
-
+            //üretilen xml den servise gidicek bilgiler çekilir
             $xml = simplexml_load_string($xml_content);
             $documentUUID = (string)$xml->children('cbc', true)->UUID;
             $documentId = (string)$xml->children('cbc', true)->ID;
@@ -78,9 +85,8 @@ class HomeController extends Controller
             $sourceUrn = "urn:mail:defaultgb@sahanekitap.com.tr";
             $destinationUrn = "mustafa9889.ma@gmail.com";
 
-            //sendEArchiveInvoice::send($xml_content, $destinationUrn, $documentDate, $documentUUID, $documentId, $sourceUrn);
-
-
+            //SOAP servise oluşturulan UBL 2.1 formattaki faturayı gönderir ve servisten dönen yanıtı ekrana yazar
+            sendEArchiveInvoice::send($xml_content, $destinationUrn, $documentDate, $documentUUID, $documentId, $sourceUrn);
         }
 
         CreateEInvoice();
